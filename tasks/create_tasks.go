@@ -1,19 +1,19 @@
 package main
 
 import (
-	"avs-operator-go/bindings"
-	"avs-operator-go/config"
 	"context"
 	"fmt"
 	"log"
-	"time"
-
 	"math/rand"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+
+	"avs-operator-go/bindings"
+	"avs-operator-go/config"
 )
 
 // generateRandomName creates a random name by combining a random adjective, a random noun, and a random number.
@@ -22,14 +22,14 @@ func generateRandomName() string {
 	nouns := []string{"Fox", "Dog", "Cat", "Mouse", "Bear"}
 
 	// Seed the random number generator to ensure different results on each run
-	rand.Seed(time.Now().UnixNano())
+	gen := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// Select random adjective and noun
 	adjective := adjectives[rand.Intn(len(adjectives))]
-	noun := nouns[rand.Intn(len(nouns))]
+	noun := nouns[gen.Intn(len(nouns))]
 
 	// Generate a random number between 0 and 999
-	number := rand.Intn(1000)
+	number := gen.Intn(1000)
 
 	// Create and return the random name
 	return fmt.Sprintf("%s%s%d", adjective, noun, number)
