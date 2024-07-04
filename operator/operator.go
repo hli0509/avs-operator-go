@@ -37,7 +37,10 @@ func NewOperator(cfg config.Config) *Operator {
 
 	client, err := ethclient.Dial(cfg.Provider)
 	if err != nil {
-		log.Fatalf("failed to connect to the Ethereum network: %v", err)
+		log.Fatalf("failed to connect to rpc endpoint: %v", err)
+	}
+	if err != nil {
+		log.Fatalf("failed to connect to ws endpoint: %v", err)
 	}
 
 	chainID, err := client.ChainID(context.Background())
@@ -190,25 +193,34 @@ func (o *Operator) SignAndRespondToTask(taskIndex, taskCreatedBlock uint32, task
 func (o *Operator) MonitorNewTasks() error {
 
 	newTaskCreated := make(chan *bindings.ContractNewTaskCreated)
-
-	sub, err := o.contract.WatchNewTaskCreated(nil, newTaskCreated, nil)
-	if err != nil {
-		return err
-	}
-
+	var start uint32 = 0
 	go func() {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case <-sub.Err():
+		ticker := time.NewTicker(3 * time.Second)
+
+		for _ = range ticker.C {
+			filterOpt := &bind.FilterOpts{
+				Start: uint64(start),
+				End:   nil,
+			}
+			iter, err := o.contract.FilterNewTaskCreated(filterOpt, nil)
+			if err != nil {
 				return
-			case event := <-newTaskCreated:
-				log.Printf("New task created: %s\n", event.Task.Name)
-				o.SignAndRespondToTask(event.TaskIndex, event.Task.TaskCreatedBlock, event.Task.Name)
+			}
+			for iter.Next() {
+				start = iter.Event.Task.TaskCreatedBlock + 1
+				newTaskCreated <- iter.Event
 			}
 		}
 	}()
 
 	log.Println("Monitoring for new tasks...")
+	for {
+		select {
+		case event := <-newTaskCreated:
+			log.Printf("New task created: %s\n", event.Task.Name)
+			o.SignAndRespondToTask(event.TaskIndex, event.Task.TaskCreatedBlock, event.Task.Name)
+		}
+	}
+
 	return nil
 }
