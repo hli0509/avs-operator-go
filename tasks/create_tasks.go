@@ -78,3 +78,7 @@ func startCreatingTasks() {
 		time.Sleep(15 * time.Second)
 	}
 }
+
+func main() {
+	startCreatingTasks()
+}
