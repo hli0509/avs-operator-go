@@ -63,7 +63,11 @@ func createNewTask(taskName string) {
 		log.Fatalf("failed to create transactor: %v", err)
 	}
 
-	tx, _ := contract.CreateNewTask(opts, taskName)
+	tx, err := contract.CreateNewTask(opts, taskName)
+	if err != nil {
+		log.Fatalf("failed to send create task transaction: %v", err)
+	}
+
 	receipt, err := bind.WaitMined(context.Background(), client, tx)
 	if err != nil || receipt.Status != 1 {
 		log.Fatalf("Error sending transaction: %v", err)
